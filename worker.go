@@ -43,19 +43,20 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 
 	log.Printf("input: startDate: %v, endDate: %v, days: %v", input.StartDate, input.EndDate, input.Days)
 
+	capaName := "jade-app-temp-hum"
+	var capability *jadesdk.Capability
 	if w.SDK != nil && w.SDK.Conf.Capabilities != nil && len(w.SDK.Conf.Capabilities) > 0 {
-		for i, cap := range w.SDK.Conf.Capabilities {
-			log.Printf("capability[%v] name: %v, value: %v, api: %v, type: %v, action: %v, url: %v", 
-				i, cap.Name, cap.Value, cap.API, cap.Type, cap.Action, cap.URL,
-			)
-			if cap.Parameters != nil && len(cap.Parameters) > 0 {
-				for j, param := range cap.Parameters {
-					log.Printf("   param[%v] name: %v, type: %v", j, param.Name, param.Type)
-				}
+		for _, cap := range w.SDK.Conf.Capabilities {
+			if cap.Name == capaName {
+				capability = cap
 			}
 		}
 	}
-
+	if capability != nil {
+		action := capability.Action
+		url := capability.URL
+		log.Printf("action: %v, url: %v", action, url)
+	}
 
 	forwardToAggregator := &AggregatorInput{
 	}
