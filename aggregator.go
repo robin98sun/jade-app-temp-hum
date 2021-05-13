@@ -14,7 +14,7 @@ func NewAggregator() *Aggregator {
 }
 
 type AggregatorInput struct {
-	Data []interface{} `json:"data,omitempty"`
+	Amount int `json:"amount,omitempty"`
 }
 
 func (w *Aggregator) ShapeResultOfSubtask() interface{} {
@@ -29,16 +29,18 @@ func (w *Aggregator) Handler(cumulationInst interface{}, previousResults []inter
 	if subtaskResultInst == nil {
 		return cumulationInst, nil
 	}
-	// subtaskResult := subtaskResultInst.(*AggregatorInput)
+	subtaskResult := subtaskResultInst.(*AggregatorInput)
 	result := &AggregatorInput{
+		Amount: subtaskResult.Amount,
 	}
-	// var cumulation *AggregatorInput
-	// if cumulationInst != nil {
-	// 	cumulation = cumulationInst.(*AggregatorInput)
-	// }
-
+	var cumulation *AggregatorInput
+	if cumulationInst != nil {
+		cumulation = cumulationInst.(*AggregatorInput)
+	}
 	// aggregate subtasks
-	
+	if cumulation != nil {
+		result.Amount += cumulation.Amount
+	}
 
 	return result, nil
 }
