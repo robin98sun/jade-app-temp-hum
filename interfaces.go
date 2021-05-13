@@ -8,7 +8,7 @@ func main() {
 	jade := jadesdk.NewJadeSDK()
 	jade.Verbose(true)
 
-	workerMod := NewWorker(jade.Conf.Capabilities)
+	workerMod := NewWorker(jade)
 	jade.SetDefaultWorkerModule(workerMod)
 
 	aggregatorMod := NewAggregator()
