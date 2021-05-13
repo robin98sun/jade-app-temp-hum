@@ -14,6 +14,7 @@ type Worker struct {
 
 func NewWorker(sdk *jadesdk.JadeSDK) *Worker {
 	return &Worker{
+		SDK: sdk,
 	}
 }
 
