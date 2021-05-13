@@ -72,15 +72,15 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 	endDateTime := time.Now()
 	startDateTime := time.Now()
 	if startDate == "" && endDate == "" {
-		startDateTime = endDateTime.AddDate(0,0, -days)
+		startDateTime = endDateTime.Add(-days*24*time.Hour)
 	} else if endDate == "" {
 		startDateTime, _ = time.Parse("1999-01-01", startDate)
 		if input.Days > 0 {
-			endDateTime = startDateTime.AddDate(0,0, days)
+			endDateTime = startDateTime.Add(days*24*time.Hour)
 		}
 	} else if startDate == "" {
 		endDateTime, _ = time.Parse("1999-01-01", endDate)
-		startDateTime = endDateTime.AddDate(0,0, -days)
+		startDateTime = endDateTime.Add(-days*24*time.Hour)
 	} else {
 		startDateTime, _ = time.Parse("1999-01-01", startDate)
 		endDateTime, _ = time.Parse("1999-01-01", endDate)
