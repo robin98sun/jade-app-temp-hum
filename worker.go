@@ -41,7 +41,7 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 		)
 		if cap.Parameters != nil && len(cap.Parameters) > 0 {
 			for j, param := range cap.Parameters {
-				log.Print("   param[%v] name: %v, type: %v", param.Name, param.Type)
+				log.Print("   param[%v] name: %v, type: %v", j, param.Name, param.Type)
 			}
 		}
 	}
