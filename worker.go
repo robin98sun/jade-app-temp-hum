@@ -71,17 +71,17 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 
 	endDateTime := time.Now()
 	startDateTime := time.Now()
-	formatStr := "2021-12-31"
+	formatStr := "2006-01-02"
 	if startDate == "" && endDate == "" {
-		startDateTime = endDateTime.Add(-time.Duration(days)*24*time.Hour)
+		startDateTime = endDateTime.AddDate(0,0, -days)
 	} else if endDate == "" {
 		startDateTime, _ = time.Parse(formatStr, startDate)
 		if input.Days > 0 {
-			endDateTime = startDateTime.Add(time.Duration(days)*24*time.Hour)
+			endDateTime = startDateTime.AddDate(0,0, days)
 		}
 	} else if startDate == "" {
 		endDateTime, _ = time.Parse(formatStr, endDate)
-		startDateTime = endDateTime.Add(-time.Duration(days)*24*time.Hour)
+		startDateTime = endDateTime.AddDate(0,0, -days)
 	} else {
 		startDateTime, _ = time.Parse(formatStr, startDate)
 		endDateTime, _ = time.Parse(formatStr, endDate)
