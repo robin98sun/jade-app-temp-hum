@@ -71,23 +71,24 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 
 	endDateTime := time.Now()
 	startDateTime := time.Now()
+	formatStr := "2021-12-31"
 	if startDate == "" && endDate == "" {
-		startDateTime = endDateTime.Add(-days*24*time.Hour)
+		startDateTime = endDateTime.Add(-time.Duration(days)*24*time.Hour)
 	} else if endDate == "" {
-		startDateTime, _ = time.Parse("1999-01-01", startDate)
+		startDateTime, _ = time.Parse(formatStr, startDate)
 		if input.Days > 0 {
-			endDateTime = startDateTime.Add(days*24*time.Hour)
+			endDateTime = startDateTime.Add(time.Duration(days)*24*time.Hour)
 		}
 	} else if startDate == "" {
-		endDateTime, _ = time.Parse("1999-01-01", endDate)
-		startDateTime = endDateTime.Add(-days*24*time.Hour)
+		endDateTime, _ = time.Parse(formatStr, endDate)
+		startDateTime = endDateTime.Add(-time.Duration(days)*24*time.Hour)
 	} else {
-		startDateTime, _ = time.Parse("1999-01-01", startDate)
-		endDateTime, _ = time.Parse("1999-01-01", endDate)
+		startDateTime, _ = time.Parse(formatStr, startDate)
+		endDateTime, _ = time.Parse(formatStr, endDate)
 	}
 
-	startDate = startDateTime.Format("1999-01-01")
-	endDate = endDateTime.Format("1999-01-01")
+	startDate = startDateTime.Format(formatStr)
+	endDate = endDateTime.Format(formatStr)
 
 	// do some job
 	capaName := "jade-app-temp-hum"
