@@ -4,6 +4,7 @@ import (
 	// "math/rand"
 	// "sort"
 	// "time"
+	"log"
 	"uta.edu/aces/jadesdk"
 )
 
@@ -44,12 +45,12 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 
 	if w.SDK != nil && w.SDK.Conf.Capabilities != nil && len(w.SDK.Conf.Capabilities) > 0 {
 		for i, cap := range w.SDK.Conf.Capabilities {
-			w.SDK.log.Printf("capability[%v] name: %v, value: %v, api: %v, type: %v, action: %v, url: %v", 
+			log.Printf("capability[%v] name: %v, value: %v, api: %v, type: %v, action: %v, url: %v", 
 				i, cap.Name, cap.Value, cap.API, cap.Type, cap.Action, cap.URL,
 			)
 			if cap.Parameters != nil && len(cap.Parameters) > 0 {
 				for j, param := range cap.Parameters {
-					w.SDK.log.Printf("   param[%v] name: %v, type: %v", j, param.Name, param.Type)
+					log.Printf("   param[%v] name: %v, type: %v", j, param.Name, param.Type)
 				}
 			}
 		}
