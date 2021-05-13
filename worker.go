@@ -81,6 +81,9 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 		endDateTime, _ = time.Parse(formatStr, endDate)
 		startDateTime = endDateTime.AddDate(0,0, -days)
 	} else {
+		if startDateTime.Sub(endDateTime) > 0 {
+			endDateTime = startDateTime.AddDate(0,0, days)
+		}
 		startDateTime, _ = time.Parse(formatStr, startDate)
 		endDateTime, _ = time.Parse(formatStr, endDate)
 	}
@@ -119,7 +122,12 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 		res, err := client.Do(req)
 		if err == nil && res.Body != nil{
 			resData := []*Response{}
-			json.NewDecoder(res.Body).Decode(&resData)
+			bodyDecoder := json.NewDecoder(res.Body)
+			if bodyDecoder != nil {
+				bodyDecoder.Decode(&resData)
+			} else {
+				log.Println("ERROR: can not decode body from response")
+			}
 			fetchedData = resData
 			// log.Printf("SUCCESSFULLY fetched data amount: %v", len(fetchedData))
 		} else if res.Body == nil {
