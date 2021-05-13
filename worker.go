@@ -9,7 +9,8 @@ import (
 	"net/http"
 	"encoding/json"
 	"strings"
-	"bytes"
+    "net/url"
+    "strconv"
 )
 
 type Worker struct {
@@ -102,25 +103,26 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 	fetchedData := []*Response{}
 	if capability != nil {
 		action := capability.Action
-		url := capability.URL
-		log.Printf("action: %v, url: %v", action, url)
+		serviceUrl := capability.URL
+		log.Printf("action: %v, url: %v, startDate: %v, endDate: %v, days: %v", action, serviceUrl, startDate, endDate, days)
 		// Send the register information to upper node
-		payload := &Request{
-			StartDate: startDate,
-			EndDate: endDate,
-			FetchTemperature: "temp",
-			FetchHumidity: "hum",
-		}
-		reqbody, _ := json.Marshal(payload)
-		req, err := http.NewRequest(strings.ToUpper(action), url, bytes.NewBuffer(reqbody))
+		payload := url.Values{}
+		payload.Set("date3", startDate)
+		payload.Set("date4", endDate)
+		payload.Set("temp_box", "temp")
+		payload.Set("hum_box", "hum")
+
+		req, err := http.NewRequest(strings.ToUpper(action), serviceUrl, strings.NewReader(payload.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Add("Content-Length", strconv.Itoa(len(payload.Encode())))
+
 		client := &http.Client{}
 		res, err := client.Do(req)
 		if err == nil && res.Body != nil{
 			resData := []*Response{}
 			json.NewDecoder(res.Body).Decode(&resData)
 			fetchedData = resData
-			log.Printf("SUCCESSFULLY fetched data amount: %v", len(fetchedData))
+			log.Printf("SUCCESSFULLY fetched data amount: %v, raw data: %vv", len(fetchedData), res.Body)
 		} else if res.Body == nil {
 			log.Println("ERROR: response does not have a body")
 		} else {
