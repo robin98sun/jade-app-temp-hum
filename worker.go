@@ -59,8 +59,6 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 	var input *WorkerInput
 	input = inputInst.(*WorkerInput)
 
-	log.Printf("input: startDate: %v, endDate: %v, days: %v", input.StartDate, input.EndDate, input.Days)
-
 	startDate := input.StartDate
 	endDate := input.EndDate
 	days := input.Days
@@ -105,7 +103,7 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 	if capability != nil {
 		action := capability.Action
 		serviceUrl := capability.URL
-		log.Printf("action: %v, url: %v, startDate: %v, endDate: %v, days: %v", action, serviceUrl, startDate, endDate, days)
+		// log.Printf("action: %v, url: %v, startDate: %v, endDate: %v, days: %v", action, serviceUrl, startDate, endDate, days)
 		// Send the register information to upper node
 		payload := url.Values{}
 		payload.Set("date3", startDate)
@@ -123,7 +121,7 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 			resData := []*Response{}
 			json.NewDecoder(res.Body).Decode(&resData)
 			fetchedData = resData
-			log.Printf("SUCCESSFULLY fetched data amount: %v, raw data: %vv", len(fetchedData), res.Body)
+			// log.Printf("SUCCESSFULLY fetched data amount: %v", len(fetchedData))
 		} else if res.Body == nil {
 			log.Println("ERROR: response does not have a body")
 		} else {
@@ -134,6 +132,9 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 	forwardToAggregator := &AggregatorInput{
 		Amount: len(fetchedData),
 	}
+	log.Printf("startDate: %v, endDate: %v, days: %v, fetched lines: %v", 
+		input.StartDate, input.EndDate, input.Days, len(fetchedData),
+	)
 
 	// done
 	return forwardToAggregator, nil
