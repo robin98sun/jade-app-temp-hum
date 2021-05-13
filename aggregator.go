@@ -3,13 +3,13 @@ package main
 import (
 	// "log"
 	// "time"
-	"uta.edu/aces/jadesdk"
+	// "uta.edu/aces/jadesdk"
 )
 
 type Aggregator struct {
 }
 
-func NewAggregator(capabilities []*jadesdk.Capability) *Aggregator {
+func NewAggregator() *Aggregator {
 	return &Aggregator{}
 }
 

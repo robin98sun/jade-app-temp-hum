@@ -11,7 +11,7 @@ func main() {
 	workerMod := NewWorker(jade.Conf.Capabilities)
 	jade.SetDefaultWorkerModule(workerMod)
 
-	aggregatorMod := NewAggregator(jade.Conf.Capabilities)
+	aggregatorMod := NewAggregator()
 	jade.SetDefaultAggregatorModule(aggregatorMod)
 	jade.CreateHTTPServer()
 }
