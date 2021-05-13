@@ -8,10 +8,10 @@ func main() {
 	jade := jadesdk.NewJadeSDK()
 	jade.Verbose(false)
 
-	workerMod := NewWorker()
+	workerMod := NewWorker(jade.Conf.Capabilities)
 	jade.SetDefaultWorkerModule(workerMod)
 
-	aggregatorMod := NewAggregator()
+	aggregatorMod := NewAggregator(jade.Conf.Capabilities)
 	jade.SetDefaultAggregatorModule(aggregatorMod)
 	jade.CreateHTTPServer()
 }
