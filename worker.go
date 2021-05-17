@@ -166,7 +166,7 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 				} else {
 					for results.Next() {
 						var item DataItem
-						err = results.Scan(item.Time, item.Temperature, item.Humidity)
+						err = results.Scan(&item.Time, &item.Temperature, &item.Humidity)
 						if err != nil {
 							fetchedData.Error += " [data error]: " + err.Error() + "; "
 						} else {
@@ -190,7 +190,7 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 			action := capability_service.Action
 			serviceUrl := capability_service.URL
 			conn_desc = serviceUrl
-			
+
 			payload := url.Values{}
 			payload.Set("date3", startDate)
 			payload.Set("date4", endDate)
@@ -224,7 +224,7 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 	}
 
 	log.Printf("startDate: %v, endDate: %v, days: %v, fetched lines: %v, preprocessing time(ms): %v, connection time (ms): %v, query time (ms): %v, [%v]:{%v}", 
-		input.StartDate, input.EndDate, input.Days, 
+		startDate, endDate, days, 
 		len(fetchedData.Results),
 		fetchedData.Preprocessing,
 		fetchedData.Connection,
@@ -234,7 +234,7 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 	if fetchedData.Error != "" {
 		log.Printf("%v ERROR: startDate: %v, endDate: %v, days: %v, fetched lines: %v, [%v]:{%v}, ERROR: %v", 
 			target,
-			input.StartDate, input.EndDate, input.Days, 
+			startDate, endDate, days, 
 			len(fetchedData.Results),
 			target, conn_desc,
 			fetchedData.Error,
