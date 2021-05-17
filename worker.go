@@ -11,10 +11,13 @@ import (
 	"strings"
     "net/url"
     "strconv"
+    "database/sql"
+    _ "github.com/go-sql-driver/mysql"
 )
 
 type Worker struct {
 	SDK *jadesdk.JadeSDK
+	DbConn *sql.DB
 }
 
 func NewWorker(sdk *jadesdk.JadeSDK) *Worker {
@@ -23,10 +26,18 @@ func NewWorker(sdk *jadesdk.JadeSDK) *Worker {
 	}
 }
 
+type TargetType string
+
+const (
+	TargetTypeDatabase TargetType = "database"
+	TargetTypeService             = "service"
+)
+
 type WorkerInput struct {
 	Days  int `json:"days,omitempty"`
 	StartDate string `json:"startDate,omitempty"`
 	EndDate string `json:"endDate,omitempty"`
+	Target TargetType `json:"target,omitempty"`
 }
 
 func (w *Worker) ShapeInput() interface{} {
@@ -56,20 +67,26 @@ type DataItem struct {
 
 type Response struct {
 	Error string `json:"error,omitempty"`
-	Preprocessing int64 `json:"preprocessing,omitempty"`
-	Connection int64 `json:"connection,omitempty"`
-	Query int64 `json:"query,omitempty"`
+	Preprocessing float64 `json:"preprocessing,omitempty"`
+	Connection float64 `json:"connection,omitempty"`
+	Query float64 `json:"query,omitempty"`
 	Results []*DataItem
 }
 
+
 // the input is WorkerInput, output is AggregatorInput
 func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
+	startTime := time.Now()
 	var input *WorkerInput
 	input = inputInst.(*WorkerInput)
 
 	startDate := input.StartDate
 	endDate := input.EndDate
 	days := input.Days
+	target := input.Target
+	if target == "" {
+		target = TargetTypeDatabase
+	}
 
 	if days < 1 {
 		days = 1
@@ -100,70 +117,132 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 	endDate = endDateTime.Format(formatStr)
 
 	// do some job
-	capaName := "jade-app-temp-hum"
-	var capability *jadesdk.Capability
+	var capability_service *jadesdk.Capability
+	db_name := ""
+	db_pass := ""
+	db_user := ""
+	db_host := ""
+	db_port := ""
 	if w.SDK != nil && w.SDK.Conf.Capabilities != nil && len(w.SDK.Conf.Capabilities) > 0 {
 		for _, cap := range w.SDK.Conf.Capabilities {
-			if cap.Name == capaName {
-				capability = cap
+			if cap.Name == "jade-app-temp-hum_service" {
+				capability_service = cap
+			} else if cap.Name == "jade-app-temp-hum_db_host" {
+				db_host = cap.Value
+			} else if cap.Name == "jade-app-temp-hum_db_user" {
+				db_user = cap.Value
+			} else if cap.Name == "jade-app-temp-hum_db_name" {
+				db_name = cap.Value
+			} else if cap.Name == "jade-app-temp-hum_db_pass" {
+				db_pass = cap.Value
+			} else if cap.Name == "jade-app-temp-hum_db_port" {
+				db_port = cap.Value
 			}
 		}
 	}
 
 	fetchedData := &Response{}
-	serviceUrl := "N/A"
-	if capability != nil {
-		action := capability.Action
-		serviceUrl = capability.URL
-		// log.Printf("action: %v, url: %v, startDate: %v, endDate: %v, days: %v", action, serviceUrl, startDate, endDate, days)
-		// Send the register information to upper node
-		payload := url.Values{}
-		payload.Set("date3", startDate)
-		payload.Set("date4", endDate)
-		payload.Set("temp_box", "temp")
-		payload.Set("hum_box", "hum")
-
-		req, err := http.NewRequest(strings.ToUpper(action), serviceUrl, strings.NewReader(payload.Encode()))
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		req.Header.Add("Content-Length", strconv.Itoa(len(payload.Encode())))
-
-		client := &http.Client{}
-		res, err := client.Do(req)
-		if err == nil && res.Body != nil{
-			resData := &Response{}
-			bodyDecoder := json.NewDecoder(res.Body)
-			if bodyDecoder != nil {
-				bodyDecoder.Decode(&resData)
-			} else {
-				log.Printf("ERROR: can not decode body from response, {%v}", serviceUrl)
+	conn_desc := "N/A"
+	if target == TargetTypeDatabase {
+		if db_name != "" && db_pass != "" && db_user != "" && db_host != "" && db_port != "" {
+			db_desc := db_user + ":<pass>@tcp("+ db_host + ":" + db_port + ")/" + db_name
+			db_conn_str := db_user + ":" + db_pass + "@tcp("+ db_host + ":" + db_port + ")/" + db_name
+			conn_desc = db_desc
+			startConnTime := time.Now()
+			// connect database
+			if w.DbConn == nil {
+				db, err := sql.Open("mysql", db_conn_str)
+				if err != nil {
+					fetchedData.Error = "connection error: " + err.Error()
+				} else {
+					w.DbConn = db
+				}
 			}
-			fetchedData = resData
-			// log.Printf("SUCCESSFULLY fetched data amount: %v", len(fetchedData))
-		} else if res.Body == nil {
-			log.Printf("ERROR: response does not have a body, {%v}", serviceUrl)
+			startQueryTime := time.Now()
+			if w.DbConn != nil && fetchedData.Error == "" {
+				results, err := w.DbConn.Query("SELECT TIME, VALUE_2 AS 'Temperature' , VALUE_1 AS 'Humidity' FROM sensor WHERE TIME BETWEEN ? AND ?", startDate, endDate)
+				if err != nil {
+					fetchedData.Error = "query error: " + err.Error()
+				} else {
+					for results.Next() {
+						var item DataItem
+						err = results.Scan(item.Time, item.Temperature, item.Humidity)
+						if err != nil {
+							fetchedData.Error += " [data error]: " + err.Error() + "; "
+						} else {
+							if fetchedData.Results == nil {
+								fetchedData.Results = []*DataItem{}
+							}
+							fetchedData.Results = append(fetchedData.Results, &item)
+						}
+					}
+				}
+			}
+			fetchedData.Query = float64(time.Now().Sub(startQueryTime)/time.Millisecond)
+			fetchedData.Connection = float64(startQueryTime.Sub(startConnTime)/time.Millisecond)
+			fetchedData.Preprocessing = float64(startConnTime.Sub(startTime)/time.Millisecond)
 		} else {
-			log.Printf("ERROR: error when requesting web service {%v}: %v \n", serviceUrl, err)
+			log.Printf("ERROR: capabilities for [%v] not found or incomplete", target)
+		}
+		
+	} else if target == TargetTypeService {
+		if capability_service != nil {
+			action := capability_service.Action
+			serviceUrl := capability_service.URL
+			conn_desc = serviceUrl
+			
+			payload := url.Values{}
+			payload.Set("date3", startDate)
+			payload.Set("date4", endDate)
+			payload.Set("temp_box", "temp")
+			payload.Set("hum_box", "hum")
+
+			req, err := http.NewRequest(strings.ToUpper(action), serviceUrl, strings.NewReader(payload.Encode()))
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			req.Header.Add("Content-Length", strconv.Itoa(len(payload.Encode())))
+
+			client := &http.Client{}
+			res, err := client.Do(req)
+			if err == nil && res.Body != nil{
+				resData := &Response{}
+				bodyDecoder := json.NewDecoder(res.Body)
+				if bodyDecoder != nil {
+					bodyDecoder.Decode(&resData)
+				} else {
+					log.Printf("ERROR: can not decode body from response, {%v}", serviceUrl)
+				}
+				fetchedData = resData
+				// log.Printf("SUCCESSFULLY fetched data amount: %v", len(fetchedData))
+			} else if res.Body == nil {
+				log.Printf("ERROR: response does not have a body, {%v}", serviceUrl)
+			} else {
+				log.Printf("ERROR: error when requesting web service {%v}: %v \n", serviceUrl, err)
+			}
+		} else {
+			log.Printf("ERROR: capability for [%v] not found", target)
 		}
 	}
 
-	forwardToAggregator := &AggregatorInput{
-		Amount: len(fetchedData.Results),
-	}
-	log.Printf("startDate: %v, endDate: %v, days: %v, fetched lines: %v, preprocessing time(ms): %v, connection time (ms): %v, query time (ms): %v, {%v}", 
+	log.Printf("startDate: %v, endDate: %v, days: %v, fetched lines: %v, preprocessing time(ms): %v, connection time (ms): %v, query time (ms): %v, [%v]:{%v}", 
 		input.StartDate, input.EndDate, input.Days, 
 		len(fetchedData.Results),
 		fetchedData.Preprocessing,
 		fetchedData.Connection,
 		fetchedData.Query,
-		serviceUrl,
+		target, conn_desc,
 	)
 	if fetchedData.Error != "" {
-		log.Printf("SERVICE ERROR: startDate: %v, endDate: %v, days: %v, fetched lines: %v, {%v}, ERROR: %v", 
+		log.Printf("%v ERROR: startDate: %v, endDate: %v, days: %v, fetched lines: %v, [%v]:{%v}, ERROR: %v", 
+			target,
 			input.StartDate, input.EndDate, input.Days, 
 			len(fetchedData.Results),
-			serviceUrl,
+			target, conn_desc,
 			fetchedData.Error,
 		)
+	}
+
+	forwardToAggregator := &AggregatorInput{
+		Amount: len(fetchedData.Results),
 	}
 
 	// done
