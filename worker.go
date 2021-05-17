@@ -111,9 +111,10 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 	}
 
 	fetchedData := &Response{}
+	serviceUrl := "N/A"
 	if capability != nil {
 		action := capability.Action
-		serviceUrl := capability.URL
+		serviceUrl = capability.URL
 		// log.Printf("action: %v, url: %v, startDate: %v, endDate: %v, days: %v", action, serviceUrl, startDate, endDate, days)
 		// Send the register information to upper node
 		payload := url.Values{}
@@ -134,31 +135,33 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 			if bodyDecoder != nil {
 				bodyDecoder.Decode(&resData)
 			} else {
-				log.Println("ERROR: can not decode body from response")
+				log.Printf("ERROR: can not decode body from response, {%v}", serviceUrl)
 			}
 			fetchedData = resData
 			// log.Printf("SUCCESSFULLY fetched data amount: %v", len(fetchedData))
 		} else if res.Body == nil {
-			log.Println("ERROR: response does not have a body")
+			log.Printf("ERROR: response does not have a body, {%v}", serviceUrl)
 		} else {
-			log.Printf("ERROR: error when requesting web service: %v \n", err)
+			log.Printf("ERROR: error when requesting web service {%v}: %v \n", serviceUrl, err)
 		}
 	}
 
 	forwardToAggregator := &AggregatorInput{
 		Amount: len(fetchedData.Results),
 	}
-	log.Printf("startDate: %v, endDate: %v, days: %v, fetched lines: %v, preprocessing time(ms): %v, connection time (ms): %v, query time (ms): %v", 
+	log.Printf("startDate: %v, endDate: %v, days: %v, fetched lines: %v, preprocessing time(ms): %v, connection time (ms): %v, query time (ms): %v, {%v}", 
 		input.StartDate, input.EndDate, input.Days, 
 		len(fetchedData.Results),
 		fetchedData.Preprocessing,
 		fetchedData.Connection,
 		fetchedData.Query,
+		serviceUrl,
 	)
 	if fetchedData.Error != "" {
-		log.Printf("SERVICE ERROR: startDate: %v, endDate: %v, days: %v, fetched lines: %v, ERROR: %v", 
+		log.Printf("SERVICE ERROR: startDate: %v, endDate: %v, days: %v, fetched lines: %v, {%v}, ERROR: %v", 
 			input.StartDate, input.EndDate, input.Days, 
 			len(fetchedData.Results),
+			serviceUrl,
 			fetchedData.Error,
 		)
 	}
