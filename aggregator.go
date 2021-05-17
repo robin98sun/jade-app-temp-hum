@@ -1,7 +1,7 @@
 package main
 
 import (
-	// "log"
+	"log"
 	// "time"
 	// "uta.edu/aces/jadesdk"
 )
@@ -41,6 +41,10 @@ func (w *Aggregator) Handler(cumulationInst interface{}, previousResults []inter
 	if cumulation != nil {
 		result.Amount += cumulation.Amount
 	}
+
+	log.Printf("task result: %v, cumulative result: %v",
+		subtaskResult.Amount, result.Amount,
+	)
 
 	return result, nil
 }

@@ -48,10 +48,18 @@ type Request struct {
 	FetchHumidity string `json:"hum_box,omitempty"`
 }
 
-type Response struct {
+type DataItem struct {
 	Time string `json:"TIME,omitempty"`
 	Temperature float64 `json:"Temperature,omitempty"`
 	Humidity float64 `json:"Humidity,omitempty"`
+}
+
+type Response struct {
+	Error string `json:"error,omitempty"`
+	Preprocessing int64 `json:"preprocessing,omitempty"`
+	Connection int64 `json:"connection,omitempty"`
+	Query int64 `json:"query,omitempty"`
+	Results []*DataItem
 }
 
 // the input is WorkerInput, output is AggregatorInput
@@ -102,7 +110,7 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 		}
 	}
 
-	fetchedData := []*Response{}
+	fetchedData := &Response{}
 	if capability != nil {
 		action := capability.Action
 		serviceUrl := capability.URL
@@ -121,7 +129,7 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 		client := &http.Client{}
 		res, err := client.Do(req)
 		if err == nil && res.Body != nil{
-			resData := []*Response{}
+			resData := &Response{}
 			bodyDecoder := json.NewDecoder(res.Body)
 			if bodyDecoder != nil {
 				bodyDecoder.Decode(&resData)
@@ -138,11 +146,22 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 	}
 
 	forwardToAggregator := &AggregatorInput{
-		Amount: len(fetchedData),
+		Amount: len(fetchedData.Results),
 	}
-	log.Printf("startDate: %v, endDate: %v, days: %v, fetched lines: %v", 
-		input.StartDate, input.EndDate, input.Days, len(fetchedData),
+	log.Printf("startDate: %v, endDate: %v, days: %v, fetched lines: %v, preprocessing time(ms): %v, connection time (ms): %v, query time (ms): %v", 
+		input.StartDate, input.EndDate, input.Days, 
+		len(fetchedData.Results),
+		fetchedData.Preprocessing,
+		fetchedData.Connection,
+		fetchedData.Query,
 	)
+	if fetchedData.Error != "" {
+		log.Printf("SERVICE ERROR: startDate: %v, endDate: %v, days: %v, fetched lines: %v, ERROR: %v", 
+			input.StartDate, input.EndDate, input.Days, 
+			len(fetchedData.Results),
+			fetchedData.Error,
+		)
+	}
 
 	// done
 	return forwardToAggregator, nil
