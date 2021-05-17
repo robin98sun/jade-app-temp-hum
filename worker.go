@@ -178,9 +178,9 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 					}
 				}
 			}
-			fetchedData.Query = float64(time.Now().Sub(startQueryTime)/time.Millisecond)
-			fetchedData.Connection = float64(startQueryTime.Sub(startConnTime)/time.Millisecond)
-			fetchedData.Preprocessing = float64(startConnTime.Sub(startTime)/time.Millisecond)
+			fetchedData.Query = float64(time.Now().Sub(startQueryTime))/float64(time.Millisecond)
+			fetchedData.Connection = float64(startQueryTime.Sub(startConnTime))/float64(time.Millisecond)
+			fetchedData.Preprocessing = float64(startConnTime.Sub(startTime))/float64(time.Millisecond)
 		} else {
 			log.Printf("ERROR: capabilities for [%v] not found or incomplete", target)
 		}
