@@ -205,7 +205,7 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 
 			client := &http.Client{}
 			res, err := client.Do(req)
-			if err == nil && res.Body != nil{
+			if err == nil && res != nil && res.Body != nil{
 				resData := &Response{}
 				bodyDecoder := json.NewDecoder(res.Body)
 				if bodyDecoder != nil {
@@ -216,6 +216,8 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 				fetchedData = resData
 				dbhost = "@" + resData.DBHost
 				// log.Printf("SUCCESSFULLY fetched data amount: %v", len(fetchedData))
+			} else if res == nil {
+				log.Printf("ERROR: response is null, {%v}", serviceUrl)
 			} else if res.Body == nil {
 				log.Printf("ERROR: response does not have a body, {%v}", serviceUrl)
 			} else {
