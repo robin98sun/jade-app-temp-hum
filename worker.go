@@ -71,6 +71,7 @@ type Response struct {
 	Connection float64 `json:"connection,omitempty"`
 	Query float64 `json:"query,omitempty"`
 	Results []*DataItem
+	DBHost string `json:"dbhost,omitempty"`
 }
 
 
@@ -143,6 +144,7 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 
 	fetchedData := &Response{}
 	conn_desc := "N/A"
+	dbhost := ""
 	if target == TargetTypeDatabase {
 		if db_name != "" && db_pass != "" && db_user != "" && db_host != "" && db_port != "" {
 			db_desc := db_user + ":<pass>@tcp("+ db_host + ":" + db_port + ")/" + db_name
@@ -212,6 +214,7 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 					log.Printf("ERROR: can not decode body from response, {%v}", serviceUrl)
 				}
 				fetchedData = resData
+				dbhost = "@" + resData.DBHost
 				// log.Printf("SUCCESSFULLY fetched data amount: %v", len(fetchedData))
 			} else if res.Body == nil {
 				log.Printf("ERROR: response does not have a body, {%v}", serviceUrl)
@@ -223,20 +226,21 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 		}
 	}
 
-	log.Printf("startDate: %v, endDate: %v, days: %v, fetched lines: %v, preprocessing time(ms): %v, connection time (ms): %v, query time (ms): %v, [%v]:{%v}", 
+
+	log.Printf("startDate: %v, endDate: %v, days: %v, fetched lines: %v, preprocessing time(ms): %v, connection time (ms): %v, query time (ms): %v, [%v%v]:{%v}", 
 		startDate, endDate, days, 
 		len(fetchedData.Results),
 		fetchedData.Preprocessing,
 		fetchedData.Connection,
 		fetchedData.Query,
-		target, conn_desc,
+		target, dbhost, conn_desc,
 	)
 	if fetchedData.Error != "" {
-		log.Printf("%v ERROR: startDate: %v, endDate: %v, days: %v, fetched lines: %v, [%v]:{%v}, ERROR: %v", 
+		log.Printf("%v ERROR: startDate: %v, endDate: %v, days: %v, fetched lines: %v, [%v%v]:{%v}, ERROR: %v", 
 			target,
 			startDate, endDate, days, 
 			len(fetchedData.Results),
-			target, conn_desc,
+			target, dbhost, conn_desc,
 			fetchedData.Error,
 		)
 	}
