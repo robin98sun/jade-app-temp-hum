@@ -6,7 +6,7 @@ import (
 
 func main() {
 	jade := jadesdk.NewJadeSDK()
-	jade.Verbose(false)
+	jade.Verbose(true)
 
 	workerMod := NewWorker(jade)
 	jade.SetDefaultWorkerModule(workerMod)
