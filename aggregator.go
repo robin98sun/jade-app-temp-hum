@@ -15,6 +15,17 @@ func NewAggregator() *Aggregator {
 
 type AggregatorInput struct {
 	Amount int `json:"amount,omitempty"`
+	AvgTemp float64 `json:"avg_temp,omitempty"`
+	AvgHum float64 `json:"avg_hum,omitempty"`
+}
+
+func (a *AggregatorInput) Copy() *AggregatorInput {
+	if a == nil {return nil}
+	return &AggregatorInput{
+		Amount: a.Amount,
+		AvgTemp: a.AvgTemp,
+		AvgHum: a.AvgHum,
+	}
 }
 
 func (w *Aggregator) ShapeResultOfSubtask() interface{} {
@@ -30,15 +41,20 @@ func (w *Aggregator) Handler(cumulationInst interface{}, previousResults []inter
 		return cumulationInst, nil
 	}
 	subtaskResult := subtaskResultInst.(*AggregatorInput)
-	result := &AggregatorInput{
-		Amount: subtaskResult.Amount,
-	}
+	result := subtaskResult.Copy()
+
 	var cumulation *AggregatorInput
 	if cumulationInst != nil {
 		cumulation = cumulationInst.(*AggregatorInput)
 	}
 	// aggregate subtasks
-	if cumulation != nil {
+	if cumulation != nil && result != nil {
+		if result.Amount + cumulation.Amount > 0 {
+			result.AvgTemp = cumulation.AvgTemp * float64(cumulation.Amount) + result.AvgTemp * float64(result.Amount)
+			result.AvgHum = cumulation.AvgHum * float64(cumulation.Amount) + result.AvgHum * float64(result.Amount)
+			result.AvgTemp /= float64(result.Amount + cumulation.Amount)
+			result.AvgHum /= float64(result.Amount + cumulation.Amount)
+		}
 		result.Amount += cumulation.Amount
 	}
 

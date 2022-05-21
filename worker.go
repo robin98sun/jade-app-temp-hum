@@ -227,7 +227,22 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 			log.Printf("ERROR: capability for [%v] not found", target)
 		}
 	}
+	
 
+	forwardToAggregator := &AggregatorInput{
+		Amount: len(fetchedData.Results),
+		AvgTemp: 0,
+		AvgHum: 0,
+	}
+
+	if len(fetchedData.Results) > 0 {
+		for _, item := range fetchedData.Results {
+			forwardToAggregator.AvgTemp += item.Temperature
+			forwardToAggregator.AvgHum += item.Humidity
+		}
+		forwardToAggregator.AvgTemp /= float64(len(fetchedData.Results))
+		forwardToAggregator.AvgHum /= float64(len(fetchedData.Results))
+	}
 
 	log.Printf("startDate: %v, endDate: %v, days: %v, fetched lines: %v, preprocessing time(ms): %v, connection time (ms): %v, query time (ms): %v, [%v%v]:{%v}", 
 		startDate, endDate, days, 
@@ -245,10 +260,6 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 			target, dbhost, conn_desc,
 			fetchedData.Error,
 		)
-	}
-
-	forwardToAggregator := &AggregatorInput{
-		Amount: len(fetchedData.Results),
 	}
 
 	// done
