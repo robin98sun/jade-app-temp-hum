@@ -89,13 +89,14 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 		target = TargetTypeDatabase
 	}
 
-	if days < 1 {
-		days = 1
-	}
+	// if days < 1 {
+	// 	days = 1
+	// }
 
 	endDateTime := time.Now()
 	startDateTime := time.Now()
-	formatStr := "2006-01-02"
+	// formatStr := "2006-01-02"
+	formatStr := "2006-01-02T15:04:05Z07:00"
 	if startDate == "" && endDate == "" {
 		startDateTime = endDateTime.AddDate(0,0, -days)
 	} else if endDate == "" {
