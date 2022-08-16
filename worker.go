@@ -95,8 +95,8 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 
 	endDateTime := time.Now()
 	startDateTime := time.Now()
-	// formatStr := "2006-01-02"
-	formatStr := "2006-01-02T15:04:05Z07:00"
+	formatStr := "2006-01-02"
+	// formatStr := "2006-01-02T15:04:05Z07:00"
 	if startDate == "" && endDate == "" {
 		startDateTime = endDateTime.AddDate(0,0, -days)
 	} else if endDate == "" {
