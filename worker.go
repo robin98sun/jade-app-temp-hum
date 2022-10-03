@@ -5,6 +5,7 @@ import (
 	// "sort"
 	"time"
 	"log"
+	ds "uta.edu/aces/jadesdk/data_structure"
 	"uta.edu/aces/jadesdk"
 	"net/http"
 	"encoding/json"
@@ -119,7 +120,7 @@ func (w *Worker) Handler(inputInst interface{}) (interface{}, error) {
 	endDate = endDateTime.Format(formatStr)
 
 	// do some job
-	var capability_service *jadesdk.Capability
+	var capability_service *ds.Capability
 	db_name := ""
 	db_pass := ""
 	db_user := ""
